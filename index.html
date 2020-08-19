@@ -3,31 +3,32 @@
   <head>
     <title>WebSocket</title>
     <meta charset="utf-8" />
+    <style>
+      form {
+        display: flex;
+        flex-direction: column;
+        flex-wrap: wrap;
+        justify-content: center;
+        width: 300px;
+      }
+
+      label {
+        font-weight: bold;
+        padding: 8px 0;
+      }
+
+      input {
+        padding: 10px;
+        width: 100%;
+      }
+
+      button {
+        padding: 10px;
+        margin-top: 15px;
+      }
+    </style>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/2.3.0/socket.io.js"></script>
   </head>
-  <style>
-    form {
-      display: flex;
-      flex-direction: column;
-      flex-wrap: wrap;
-      justify-content: center;
-      width: 300px;
-    }
-
-    label {
-      font-weight: bold;
-      padding: 8px 0;
-    }
-
-    input {
-      padding: 10px;
-      width: 100%;
-    }
-
-    button {
-      padding: 10px;
-      margin-top: 15px;
-    }
-  </style>
   <body>
     <h1>Чат (<span class="status">Нет соединения</span>)</h1>
     <form class="chat-form">
@@ -46,13 +47,6 @@
     <ul class="chat"></ul>
 
     <script>
-      const ReadyState = {
-        CONNECTING: 0,
-        OPEN: 1,
-        CLOSING: 2,
-        CLOSED: 3,
-      };
-
       const statusElement = document.querySelector(`.status`);
       const chatFormElement = document.querySelector(`.chat-form`);
       const messageElement = chatFormElement.querySelector(
@@ -63,7 +57,7 @@
       );
       const chatElement = document.querySelector(`.chat`);
 
-      const ws = new WebSocket(`ws://localhost:4000`);
+      const socket = io(`http://localhost:4000`);
 
       const addMessage = (message) => {
         const newMessageElement = document.createElement(`li`);
@@ -81,25 +75,24 @@
         messageElement.value = ``;
         messageElement.focus();
 
-        if (ws.readyState !== ReadyState.OPEN) {
+        if (!socket.connected) {
           alert(`Соединение с сервером прервано. Обновите страницу.`);
           return;
         }
 
+        socket.emit(`message`, message);
         addMessage(message);
-        ws.send(message);
       });
 
-      ws.addEventListener(`message`, (evt) => {
-        const { data } = evt;
-        addMessage(`${data}`);
+      socket.addEventListener(`message`, (message) => {
+        addMessage(`${message}`);
       });
 
-      ws.addEventListener(`open`, () => {
+      socket.addEventListener(`connect`, () => {
         statusElement.textContent = `Подключено`;
       });
 
-      ws.addEventListener(`close`, () => {
+      socket.addEventListener(`disconnect`, () => {
         statusElement.textContent = `Отключён`;
       });
     </script>
